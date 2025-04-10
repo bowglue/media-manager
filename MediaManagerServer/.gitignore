@@ -40,3 +40,6 @@ docker-compose.override.yml
 # Media folders
 playlists/
 segments/
+
+# Env File
+.env
