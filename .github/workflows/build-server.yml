@@ -1,11 +1,12 @@
 name: Build and Package
 
 on:
+  release:
+    types: [created, published]
+  # Optionally keep the tag trigger if you want to support both methods
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
+    tags: ['v*']
+  # Removed the branch push trigger
 
 # Define permissions needed for GitHub releases
 permissions:
