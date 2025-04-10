@@ -1,6 +1,8 @@
 # Use the latest official Go image
 FROM golang:1.24.1
 
+WORKDIR /app
+
 # Install FFmpeg and other dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
