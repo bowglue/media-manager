@@ -38,64 +38,85 @@ jobs:
       - name: Download FFmpeg
         run: |
           mkdir -p dist/bin
-          curl -L https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip -o ffmpeg.zip
+          curl -L https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -o ffmpeg.zip
           7z x ffmpeg.zip -odist/
-          move dist/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe dist/bin/
-          move dist/ffmpeg-master-latest-win64-gpl/bin/ffprobe.exe dist/bin/
+          $ffmpegDir = Get-ChildItem -Path dist -Directory | Where-Object { $_.Name -like "ffmpeg-*" } | Select-Object -First 1
+          if ($ffmpegDir) {
+            Move-Item -Path "$($ffmpegDir.FullName)/bin/ffmpeg.exe" -Destination dist/bin/ -Force
+            Move-Item -Path "$($ffmpegDir.FullName)/bin/ffprobe.exe" -Destination dist/bin/ -Force
+            Remove-Item -Path "$($ffmpegDir.FullName)" -Recurse -Force
+          } else {
+            echo "Error: Could not find FFmpeg directory in extracted files"
+            exit 1
+          }
       
       - name: Create application folders
         run: |
           mkdir -p dist/database/data
           mkdir -p dist/database/migrations
-          copy MediaManagerServer/database/migrations/*.sql dist/database/migrations/ || echo "No migration files found"
-          copy MediaManagerServer/database/sqlc.yaml dist/database/ || echo "No sqlc.yaml found"
-          copy MediaManagerServer/video.html dist/ || echo "No video.html found"
+          Copy-Item -Path MediaManagerServer/database/migrations/*.sql -Destination dist/database/migrations/ -ErrorAction SilentlyContinue
+          Copy-Item -Path MediaManagerServer/database/sqlc.yaml -Destination dist/database/ -ErrorAction SilentlyContinue
+          Copy-Item -Path MediaManagerServer/video.html -Destination dist/ -ErrorAction SilentlyContinue
       
       - name: Create Installer with InnoSetup
         run: |
-          choco install innosetup -y
-          # Create InnoSetup script
-          echo '
-          [Setup]
-          AppName=Media Manager
-          AppVersion=1.0.0
-          DefaultDirName={pf}\MediaManager
-          DefaultGroupName=Media Manager
-          OutputDir=output
-          OutputBaseFilename=MediaManagerSetup
-          Compression=lzma
-          SolidCompression=yes
+          choco install innosetup -y --no-progress
           
-          [Files]
-          Source: "dist\mediamanager.exe"; DestDir: "{app}"
-          Source: "dist\bin\*"; DestDir: "{app}\bin"; Flags: recursesubdirs
-          Source: "dist\database\*"; DestDir: "{app}\database"; Flags: recursesubdirs
-          Source: "dist\video.html"; DestDir: "{app}"
+          # Create InnoSetup script using PowerShell
+          $installerScript = @'
+[Setup]
+AppName=Media Manager
+AppVersion=1.0.0
+DefaultDirName={pf}\MediaManager
+DefaultGroupName=Media Manager
+OutputDir=output
+OutputBaseFilename=MediaManagerSetup
+Compression=lzma
+SolidCompression=yes
+
+[Files]
+Source: "dist\mediamanager.exe"; DestDir: "{app}"
+Source: "dist\bin\*"; DestDir: "{app}\bin"; Flags: recursesubdirs
+Source: "dist\database\*"; DestDir: "{app}\database"; Flags: recursesubdirs
+Source: "dist\video.html"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\Media Manager"; Filename: "{app}\mediamanager.exe"
+Name: "{commondesktop}\Media Manager"; Filename: "{app}\mediamanager.exe"
+
+[Registry]
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "PATH"; ValueData: "{olddata};{app}\bin"; Check: NeedsAddPath(ExpandConstant(''{app}\bin''))
+
+[Code]
+function NeedsAddPath(Param: string): boolean;
+var
+  OrigPath: string;
+begin
+  if not RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'PATH', OrigPath) then
+  begin
+    Result := True;
+    exit;
+  end;
+  Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
+end;
+'@
           
-          [Icons]
-          Name: "{group}\Media Manager"; Filename: "{app}\mediamanager.exe"
-          Name: "{commondesktop}\Media Manager"; Filename: "{app}\mediamanager.exe"
+          # Save to file
+          $installerScript | Out-File -FilePath installer.iss -Encoding ASCII
           
-          [Registry]
-          Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "PATH"; ValueData: "{olddata};{app}\bin"; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
-          
-          [Code]
-          function NeedsAddPath(Param: string): boolean;
-          var
-            OrigPath: string;
-          begin
-            if not RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'PATH', OrigPath) then
-            begin
-              Result := True;
-              exit;
-            end;
-            Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
-          end;
-          ' > installer.iss
+          # Create output directory
+          New-Item -Path output -ItemType Directory -Force | Out-Null
           
           # Build installer
-          mkdir -p output
-          iscc installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          
+          # Verify installer was created
+          if (Test-Path output/MediaManagerSetup.exe) {
+            echo "Installer created successfully"
+          } else {
+            echo "Error: Installer creation failed"
+            exit 1
+          }
       
       - name: Upload Installer
         uses: actions/upload-artifact@v4
