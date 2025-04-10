@@ -23,10 +23,11 @@ jobs:
         with:
           go-version: '1.24.1'
       
-      - name: Debug - List Directory Structure
+      - name: Update dependencies
         run: |
-          dir
-          dir MediaManagerServer
+          cd MediaManagerServer
+          go mod tidy
+          go get github.com/u2takey/ffmpeg-go
       
       - name: Build application
         run: |
