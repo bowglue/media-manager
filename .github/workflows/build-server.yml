@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# Define permissions needed for GitHub releases
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build:
     name: Build and Create Installer
@@ -87,3 +92,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: output/MediaManagerSetup.exe
+          token: ${{ secrets.GITHUB_TOKEN }}
