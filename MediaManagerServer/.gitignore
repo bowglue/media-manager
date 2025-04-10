@@ -29,7 +29,7 @@ vendor/
 .DS_Store
 
 # SQLite databases (if generated during dev)
-*.db
+database/data/*.db
 
 # Gin file watcher build artifacts
 gin-bin
