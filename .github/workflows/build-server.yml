@@ -62,8 +62,8 @@ jobs:
         run: |
           choco install innosetup -y --no-progress
           
-          # Create InnoSetup script using PowerShell
-          $installerScript = @'
+          # Create InnoSetup script file
+          Set-Content -Path installer.iss -Value @"
 [Setup]
 AppName=Media Manager
 AppVersion=1.0.0
@@ -85,7 +85,7 @@ Name: "{group}\Media Manager"; Filename: "{app}\mediamanager.exe"
 Name: "{commondesktop}\Media Manager"; Filename: "{app}\mediamanager.exe"
 
 [Registry]
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "PATH"; ValueData: "{olddata};{app}\bin"; Check: NeedsAddPath(ExpandConstant(''{app}\bin''))
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "PATH"; ValueData: "{olddata};{app}\bin"; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
 
 [Code]
 function NeedsAddPath(Param: string): boolean;
@@ -99,10 +99,7 @@ begin
   end;
   Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
 end;
-'@
-          
-          # Save to file
-          $installerScript | Out-File -FilePath installer.iss -Encoding ASCII
+"@
           
           # Create output directory
           New-Item -Path output -ItemType Directory -Force | Out-Null
