@@ -6,6 +6,18 @@ on:
   # Keep the release trigger for manual releases
   release:
     types: [created, published]
+  # Add manual trigger
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      create_release:
+        description: 'Create a new release'
+        type: boolean
+        required: true
+        default: true
 
 # Define permissions needed for GitHub releases
 permissions:
@@ -115,3 +127,18 @@ jobs:
         with:
           files: output/MediaManagerSetup.exe
           token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create Manual Release
+        if: github.event_name == 'workflow_dispatch' && inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release v${{ inputs.version }}"
+          body: |
+            Manual release v${{ inputs.version }}
+            
+            This release was triggered manually.
+          files: output/MediaManagerSetup.exe
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
