@@ -56,7 +56,6 @@ jobs:
         run: |
           cd MediaManagerServer
           go mod tidy
-          go get github.com/u2takey/ffmpeg-go
           go build -v -o ../dist/mediamanager.exe ./cmd/ffmpeg/
         shell: pwsh
       
