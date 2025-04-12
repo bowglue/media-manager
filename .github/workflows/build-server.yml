@@ -1,11 +1,11 @@
 name: Build and Package
 
 on:
-  push:
-    branches: [ main ]
+   #push:
+     #branches: [ main ]
   # Keep the release trigger for manual releases
-  release:
-    types: [created, published]
+  # release:
+     #types: [created, published]
   # Add manual trigger
   workflow_dispatch:
     inputs:
