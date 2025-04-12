@@ -48,13 +48,15 @@ jobs:
           go build -v -o ../dist/mediamanager.exe ./cmd/ffmpeg/
         shell: pwsh
       
-      - name: Download and extract FFmpeg
+      - name: Cache FFmpeg
         uses: actions/cache@v4
         with:
           path: ffmpeg.zip
           key: ffmpeg-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ffmpeg-
+      
+      - name: Download and extract FFmpeg
         run: |
           if (!(Test-Path ffmpeg.zip)) {
             Invoke-WebRequest -Uri ${{ env.FFMPEG_URL }} -OutFile ffmpeg.zip
