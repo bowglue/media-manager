@@ -91,7 +91,10 @@ func TranscodeFullVideo(sourcePath, width, bitrate string, audioStream int) {
 	log.Printf("Starting full transcoding of: %s", sourcePath)
 	
 	// Create the segment pattern
-	segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts")
+	// segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts")
+	segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts.temp")
+	segmentList := filepath.Join(config.OutputDir, "segment_list.csv")
+	startIndex := 0 / config.SegmentLength
 	
 	// Build FFmpeg command with parameters to ensure exact segment times
 	args := []string{
@@ -99,16 +102,16 @@ func TranscodeFullVideo(sourcePath, width, bitrate string, audioStream int) {
 		"-c:v", "libx264",                           // H.264 video codec
 		"-preset", "ultrafast",                      // Fastest encoding
 		"-tune", "fastdecode",                       // Optimize for fast decoding
-		"-level", "3.0",                             // Compatible level
-		"-b:v", bitrate,                             // Video bitrate
-		"-maxrate", bitrate,                         // Maximum bitrate
-		"-bufsize", bitrate,                         // Buffer size
-		"-vf", fmt.Sprintf("scale=%s:-2", width),    // Scale video
+		// "-level", "3.0",                             // Compatible level
+		// "-b:v", bitrate,                             // Video bitrate
+		// "-maxrate", bitrate,                         // Maximum bitrate
+		// "-bufsize", bitrate,                         // Buffer size
+		// "-vf", fmt.Sprintf("scale=%s:-2", width),    // Scale video
 		
 		// Parameters to ensure consistent segment timing
-		"-force_key_frames", fmt.Sprintf("expr:gte(t,n_forced*%d)", config.SegmentLength), // Force keyframes at each segment boundary
-		"-sc_threshold", "0",                        // Disable scene change detection
-		"-sn",                                       // Disable subtitles
+		// "-force_key_frames", fmt.Sprintf("expr:gte(t,n_forced*%d)", config.SegmentLength), // Force keyframes at each segment boundary
+		// "-sc_threshold", "0",                        // Disable scene change detection
+		// "-sn",                                       // Disable subtitles
 		
 		// Audio parameters
 		"-c:a", "aac",                               // AAC audio codec
@@ -124,14 +127,16 @@ func TranscodeFullVideo(sourcePath, width, bitrate string, audioStream int) {
 		"-f", "segment",                             // Output format: segmented
 		"-segment_time", fmt.Sprintf("%d", config.SegmentLength),
 		"-segment_format", "mpegts",                 // MPEG-TS container for segments
-		"-segment_list", filepath.Join(config.OutputDir, "debug.m3u8"), // Debug playlist
-		"-segment_list_flags", "+live",              // Add the #EXT-X-ENDLIST tag at end of processing
+		// "-segment_list", filepath.Join(config.OutputDir, "debug.m3u8"), // Debug playlist
+		// "-segment_list_flags", "+live",              // Add the #EXT-X-ENDLIST tag at end of processing
 		
 		// Critical params for exact segment timing
-		"-reset_timestamps", "1",                    // Reset timestamps at each segment start
-		"-break_non_keyframes", "0",                 // Only break at keyframes
-		"-avoid_negative_ts", "make_zero",           // Handle negative timestamps by making them zero
-		
+		//"-reset_timestamps", "1",                    // Reset timestamps at each segment start
+		// "-break_non_keyframes", "0",                 // Only break at keyframes
+		// "-avoid_negative_ts", "make_zero",           // Handle negative timestamps by making them zero
+		"-segment_list", segmentList,
+		"-segment_list_type", "csv",
+		"-segment_start_number", fmt.Sprintf("%d", startIndex),
 		segmentPattern,
 	}
 	
@@ -150,7 +155,9 @@ func TranscodeVideoOnly(sourcePath, width, bitrate string, audioStream int) {
 	log.Printf("Starting video-only transcoding of: %s", sourcePath)
 	
 	// Create the segment pattern
-	segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts")
+	// segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts")
+	segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts.temp")
+	segmentList := filepath.Join(config.OutputDir, "segment_list.csv")
 	
 	// Build FFmpeg command
 	args := []string{
@@ -169,6 +176,8 @@ func TranscodeVideoOnly(sourcePath, width, bitrate string, audioStream int) {
 		"-f", "segment",
 		"-segment_time", fmt.Sprintf("%d", config.SegmentLength),
 		"-segment_format", "mpegts",
+		"-segment_list", segmentList,
+		"-segment_list_type", "csv",
 		segmentPattern,
 	}
 	
@@ -180,10 +189,14 @@ func TranscodeAudioOnly(sourcePath string, audioStream int) {
 	log.Printf("Starting audio-only transcoding of: %s", sourcePath)
 	
 	// Create the segment pattern
-	segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts")
-	
+	// segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts")
+
+	segmentPattern := filepath.Join(config.OutputDir, "segment_%05d.ts.temp")
+	segmentList := filepath.Join(config.OutputDir, "segment_list.csv")
+	startIndex := 0 / config.SegmentLength
 	// Build FFmpeg command
 	args := []string{
+		// "-ss", "00:02:30", // Start at 2 minutes 30 seconds
 		"-i", sourcePath,
 		"-c:v", "copy", // Copy original video
 		"-c:a", "aac",
@@ -194,8 +207,18 @@ func TranscodeAudioOnly(sourcePath string, audioStream int) {
 		"-f", "segment",
 		"-segment_time", fmt.Sprintf("%d", config.SegmentLength),
 		"-segment_format", "mpegts",
+		"-segment_start_number", fmt.Sprintf("%d", startIndex),
+		"-segment_list", segmentList,
+		"-segment_list_type", "csv",
 		segmentPattern,
 	}
+	
+	// Debug: Print the command being executed
+	cmdString := "ffmpeg"
+	for _, arg := range args {
+		cmdString += " " + arg
+	}
+	log.Printf("Executing FFmpeg command: %s", cmdString)
 	
 	RunFFmpegCommand(args)
 }
@@ -263,3 +286,6 @@ func SortSegmentFiles(files []string) []string {
 	
 	return result
 } 
+
+
+

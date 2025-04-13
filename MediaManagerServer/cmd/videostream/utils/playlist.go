@@ -75,6 +75,11 @@ func CreateIndexPlaylist(duration float64) {
 				}
 			}
 		}
+
+
+		if i != 0 {
+			playlist.WriteString("#EXT-X-DISCONTINUITY\n") // Add this before each segment (except the first)
+		}
 		
 		segmentName := fmt.Sprintf("segment_%05d.ts", i)
 		playlist.WriteString(fmt.Sprintf("#EXTINF:%.6f,\n", segmentDuration))

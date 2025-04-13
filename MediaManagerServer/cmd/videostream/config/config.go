@@ -8,7 +8,7 @@ const (
 // Video path configuration
 const (
 	VideoDir = "/data/animes/Devil May Cry 2025/Season 1"
-	//VideoDir = "/data/movies/Alien Romulus (2024)"
+	//VideoDir = "/data/movies/The Lord of the Rings The Return of the King (2003)"
 )
 
 // Output and segment configuration

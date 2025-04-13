@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"app/cmd/videostream/config"
 	"app/cmd/videostream/utils"
@@ -25,7 +26,7 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use hardcoded path or get from request
 	videoPath := "Devil May Cry (2025) - S01E01 - Hell WEBDL-1080p.mkv"
-	//videoPath := "Alien Romulus (2024) WEBDL-2160p_HB.mkv"
+	//videoPath := "The Lord of the Rings The Return of the King (2003) Bluray-2160p_HB.mkv"
 	if pathParam := r.URL.Query().Get("path"); pathParam != "" {
 		videoPath = pathParam
 	}
@@ -57,8 +58,8 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	// Clean output directory
-	utils.CleanOutputDir()
+	// // Clean output directory
+	// utils.CleanOutputDir()
 	
 	// Get video info for duration
 	fileInfo, err := utils.GetFileInfo(sourcePath)
@@ -83,6 +84,7 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 	
 	// Determine if transcoding is needed
 	needsVideoTranscode := forceTranscode || (fileInfo.VideoCodec != "h264" && fileInfo.VideoCodec != "hevc")
+	//needsVideoTranscode := forceTranscode || (fileInfo.VideoCodec == "h264" || fileInfo.VideoCodec == "hevc" )
 	needsAudioTranscode := forceTranscode || (fileInfo.AudioCodec != "aac" && fileInfo.AudioCodec != "mp3")
 	
 	// Generate segments
@@ -99,7 +101,8 @@ func StreamHandler(w http.ResponseWriter, r *http.Request) {
 		// Direct play with segmentation
 		go utils.SegmentVideo(sourcePath)
 	}
-	
+
+	go WatchSegmentList(filepath.Join(config.OutputDir, "segment_list.csv"))
 	// Redirect to master playlist
 	http.Redirect(w, r, "/segments/master.m3u8", http.StatusFound)
 }
@@ -131,27 +134,27 @@ func SegmentsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Fix paths in playlists if needed
-	if filename == "debug.m3u8" {
-		// Read the file
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			http.Error(w, "Error reading playlist", http.StatusInternalServerError)
-			return
-		}
+	// // Fix paths in playlists if needed
+	// if filename == "debug.m3u8" {
+	// 	// Read the file
+	// 	content, err := os.ReadFile(filePath)
+	// 	if err != nil {
+	// 		http.Error(w, "Error reading playlist", http.StatusInternalServerError)
+	// 		return
+	// 	}
 		
-		// Fix the paths in the playlist
-		fixedContent := strings.ReplaceAll(string(content), 
-			"segment_", "/segments/segment_")
+	// 	// Fix the paths in the playlist
+	// 	fixedContent := strings.ReplaceAll(string(content), 
+	// 		"segment_", "/segments/segment_")
 		
-		// Set headers
-		w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
-		w.Header().Set("Cache-Control", "no-cache") // Don't cache playlists
+	// 	// Set headers
+	// 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+	// 	w.Header().Set("Cache-Control", "no-cache") // Don't cache playlists
 		
-		// Write fixed content
-		w.Write([]byte(fixedContent))
-		return
-	}
+	// 	// Write fixed content
+	// 	w.Write([]byte(fixedContent))
+	// 	return
+	// }
 	
 	// Set appropriate content type
 	if strings.HasSuffix(filename, ".m3u8") {
@@ -164,3 +167,55 @@ func SegmentsHandler(w http.ResponseWriter, r *http.Request) {
 	
 	http.ServeFile(w, r, filePath)
 } 
+
+
+func WatchSegmentList(segmentListPath string) {
+	seen := make(map[string]bool)
+
+	for {
+		data, err := os.ReadFile(segmentListPath)
+		if err != nil {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			fields := strings.Split(line, ",")
+			if len(fields) < 1 {
+				continue
+			}
+			tempName := strings.TrimSpace(fields[0])
+			finalName := strings.TrimSuffix(tempName, ".temp")
+
+			if !seen[tempName] {
+				tempPath := filepath.Join(config.OutputDir, tempName)
+				finalPath := filepath.Join(config.OutputDir, finalName)
+
+				// Wait for file to finish writing
+				go func(tempPath, finalPath string) {
+					for {
+						time.Sleep(200 * time.Millisecond)
+						// Check that file size has stabilized
+						fi1, err1 := os.Stat(tempPath)
+						time.Sleep(300 * time.Millisecond)
+						fi2, err2 := os.Stat(tempPath)
+
+						if err1 == nil && err2 == nil && fi1.Size() == fi2.Size() {
+							// Rename the file
+							os.Rename(tempPath, finalPath)
+							break
+						}
+					}
+				}(tempPath, finalPath)
+
+				seen[tempName] = true
+			}
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
