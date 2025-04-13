@@ -116,6 +116,14 @@
         console.error("Video error:", player.error());
       });
 
+      player.on("seeking", function () {
+        console.log("seeking");
+      });
+
+      player.on("seeked", function () {
+        console.log("seeked");
+      });
+
       // Add the source to the player
       player.src({
         src: hlsUrl,
