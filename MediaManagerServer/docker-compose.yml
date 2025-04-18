@@ -17,7 +17,7 @@ services:
       - LOG_LEVEL=debug
     # For development with hot-reload:
     # command: gin --appPort 8080 --port 3000 --immediate --path ./cmd/api run main.go
-    command: gin --appPort 8080 --port 3000 --immediate --path ./cmd/ffmpeg run ffmpeg.go
+    command: gin --appPort 8080 --port 3000 --immediate --path ./cmd/videoStream run main.go
     # Production alternative (uncomment and comment out the line above):
     # command: go run ./cmd/api/main.go
 

@@ -1,36 +1,20 @@
 name: Build and Package
 
 on:
-   #push:
-     #branches: [ main ]
-  # Keep the release trigger for manual releases
-  # release:
-     #types: [created, published]
-  # Add manual trigger
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to build (e.g., 1.0.0)'
-        required: true
-        default: '1.0.0'
-      create_release:
-        description: 'Create a new release'
-        type: boolean
-        required: true
-        default: true
+  push:
+    branches: [ main ]
+    tags: ['v*']
+  release:
+    types: [created, published]
 
 # Define permissions needed for GitHub releases
 permissions:
   contents: write
   packages: write
 
-env:
-  GO_VERSION: '1.24.1'
-  FFMPEG_URL: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip'
-
 jobs:
   build:
-    name: Build and Package
+    name: Build and Create Installer
     runs-on: windows-latest
     
     steps:
@@ -39,27 +23,28 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Generate version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $version = $env:GITHUB_REF -replace 'refs/tags/v', ''
+          } else {
+            $date = Get-Date -Format "yyyy.MM.dd"
+            $sha = $env:GITHUB_SHA.Substring(0, 7)
+            $version = "$date-$sha"
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+      
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: '1.24.1'
           cache: true
           cache-dependency-path: MediaManagerServer/go.sum
       
-      - name: Create directory structure
-        run: |
-          mkdir -p dist/bin
-          mkdir -p dist/database/{data,migrations}
-          mkdir -p output
-      
-      - name: Build application
-        run: |
-          cd MediaManagerServer
-          go mod tidy
-          go build -v -o ../dist/mediamanager.exe ./cmd/ffmpeg/
-        shell: pwsh
-      
       - name: Cache FFmpeg
+        id: ffmpeg-cache
         uses: actions/cache@v4
         with:
           path: ffmpeg.zip
@@ -67,33 +52,68 @@ jobs:
           restore-keys: |
             ffmpeg-
       
-      - name: Download and extract FFmpeg
+      - name: Cache InnoSetup
+        id: innosetup-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Program Files (x86)\Inno Setup 6
+            C:\ProgramData\chocolatey\lib\innosetup
+          key: innosetup-${{ runner.os }}
+          restore-keys: |
+            innosetup-${{ runner.os }}
+      
+      - name: Create directories
+        shell: pwsh
         run: |
-          if (!(Test-Path ffmpeg.zip)) {
-            Invoke-WebRequest -Uri ${{ env.FFMPEG_URL }} -OutFile ffmpeg.zip
-          }
+          New-Item -ItemType Directory -Force -Path dist/bin
+          New-Item -ItemType Directory -Force -Path dist/database/data
+          New-Item -ItemType Directory -Force -Path dist/database/migrations
+          New-Item -ItemType Directory -Force -Path output
+      
+      - name: Build application
+        shell: pwsh
+        run: |
+          cd MediaManagerServer
+          go mod tidy
+          go build -v -o ../dist/mediamanager.exe ./cmd/ffmpeg/
+      
+      - name: Download and extract FFmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ffmpegUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+          Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
+      
+      - name: Extract FFmpeg
+        shell: pwsh
+        run: |
           7z x ffmpeg.zip -odist/ -y
           Move-Item -Path "dist/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe" -Destination "dist/bin/" -Force
           Move-Item -Path "dist/ffmpeg-master-latest-win64-gpl/bin/ffprobe.exe" -Destination "dist/bin/" -Force
           Remove-Item -Path "dist/ffmpeg-master-latest-win64-gpl" -Recurse -Force
-        shell: pwsh
       
       - name: Copy application files
+        shell: pwsh
         run: |
           Copy-Item -Path "MediaManagerServer/database/migrations/*.sql" -Destination "dist/database/migrations/" -ErrorAction SilentlyContinue
           Copy-Item -Path "MediaManagerServer/database/sqlc.yaml" -Destination "dist/database/" -ErrorAction SilentlyContinue
           Copy-Item -Path "MediaManagerServer/video.html" -Destination "dist/" -ErrorAction SilentlyContinue
-        shell: pwsh
       
-      - name: Create installer
+      - name: Install InnoSetup
+        if: steps.innosetup-cache.outputs.cache-hit != 'true'
+        shell: pwsh
         run: |
           choco install innosetup -y --no-progress
+      
+      - name: Create installer
+        shell: pwsh
+        run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
           if (!(Test-Path "output/MediaManagerSetup.exe")) {
             Write-Error "Installer creation failed"
             exit 1
           }
-        shell: pwsh
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -102,13 +122,22 @@ jobs:
           path: output/MediaManagerSetup.exe
           retention-days: 5
       
-      - name: Create Release
+      - name: Create tag for release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          git tag "v$version"
+          git push origin "v$version"
+      
+      - name: Create Release
+        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          name: "Release ${{ github.sha }}"
+          tag_name: v${{ steps.version.outputs.version }}
+          name: "Release ${{ steps.version.outputs.version }}"
           body: |
-            Automated release for commit ${{ github.sha }}
+            Release ${{ steps.version.outputs.version }}
             
             Changes in this release:
             - Updated FFmpeg to latest version
@@ -117,27 +146,5 @@ jobs:
           files: output/MediaManagerSetup.exe
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
-          prerelease: false
-          generate_release_notes: true
-      
-      - name: Release (manual)
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: output/MediaManagerSetup.exe
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Create Manual Release
-        if: github.event_name == 'workflow_dispatch' && inputs.create_release == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "Release v${{ inputs.version }}"
-          body: |
-            Manual release v${{ inputs.version }}
-            
-            This release was triggered manually.
-          files: output/MediaManagerSetup.exe
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
           generate_release_notes: true
