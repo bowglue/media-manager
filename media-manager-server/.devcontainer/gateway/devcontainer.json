@@ -1,0 +1,18 @@
+{
+  "name": "Gateway Container",
+  "dockerComposeFile": "../../docker-compose.yml",
+  "service": "gateway",
+  "workspaceFolder": "/gateway",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package userService;
+
+option go_package = "/user-service;user_service_pb";
+// option go_package = "proto-generated/user-service;userpb";
+// option go_package = "user-service;userpb"; 
+// option go_package = "/user-service;userpb";
+
+service UserService {
+    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+    rpc GetUser (GetUserRequest) returns (GetUserResponse);
+}
+
+
+message CreateUserRequest {
+    string username = 1;
+    string password = 2;
+    string email = 3;
+}
+
+message CreateUserResponse {
+    string user_id = 1;
+    string message = 2; 
+}
+
+
+message GetUserRequest {
+    string user_id = 1;
+}
+
+message GetUserResponse {
+    string user_id = 1;
+    string username = 2;
+    string email = 3;
+}

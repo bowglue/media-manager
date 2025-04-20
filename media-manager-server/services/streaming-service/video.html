@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <title>Media Manager - HLS Stream</title>
+    <style>
+      :root {
+        --primary-color: #3498db;
+        --dark-bg: #1e1e1e;
+        --light-text: #f5f5f5;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--dark-bg);
+        color: var(--light-text);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+      }
+      header {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .video-container {
+        width: 100%;
+        max-width: 1200px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      video {
+        width: 100%;
+        display: block;
+        background-color: black;
+      }
+      .controls {
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+      .info {
+        margin-top: 20px;
+        text-align: center;
+      }
+      @media (max-width: 768px) {
+        .video-container {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>HLS Video Player</h1>
+    </header>
+
+    <div class="video-container">
+      <video
+        id="player"
+        class="video-js vjs-default-skin vjs-big-play-centered"
+        controls
+      >
+        <!-- The source will be set via JavaScript -->
+      </video>
+    </div>
+
+    <!-- Load HLS.js separately for better compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
+    <script>
+      // Configure VideoJS player with HLS support
+      var player = videojs("player", {
+        fluid: true,
+        controls: true,
+        preload: "auto",
+        html5: {
+          hls: {
+            overrideNative: true,
+            enableLowInitialPlaylist: true,
+          },
+        },
+      });
+
+      // Set volume to 25%
+      player.ready(function () {
+        this.volume(0.25);
+      });
+
+      // HLS stream URL - adjust this to match your server configuration
+      //const hlsUrl = "http://localhost:8080/stream?transcode=true";
+      const hlsUrl = "http://localhost:8080/stream";
+
+      // Log any errors
+      player.on("error", function (e) {
+        console.error("Video error:", player.error());
+      });
+
+      player.on("seeking", function () {
+        console.log("seeking");
+      });
+
+      player.on("seeked", function () {
+        console.log("seeked");
+      });
+
+      // Add the source to the player
+      player.src({
+        src: hlsUrl,
+        type: "application/vnd.apple.mpegurl", // Correct MIME type for HLS
+      });
+
+      // Optional: Add debug information
+      player.on("loadedmetadata", function () {
+        console.log("Video metadata loaded");
+      });
+    </script>
+  </body>
+</html>
