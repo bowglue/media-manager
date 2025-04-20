@@ -2,14 +2,13 @@ module gateway
 
 go 1.24.1
 
+replace proto => ../shared/proto
+
 require (
-	proto-generated v0.0.0
+	proto v0.0.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	google.golang.org/grpc v1.71.1
 )
-
-require proto v0.0.0
-replace proto => ../proto
 
 require (
 	golang.org/x/net v0.35.0 // indirect

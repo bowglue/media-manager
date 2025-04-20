@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: definitions/user-service.proto
 
-package user_service_pb
+package userpb
 
 import (
 	context "context"

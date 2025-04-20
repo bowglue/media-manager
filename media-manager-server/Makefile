@@ -5,6 +5,9 @@ build-server-base:
 build-service-base:
 	@docker build -f ./services/Dockerfile.service.base -t media-manager-service-base:latest .
 
+build-proto-gen:
+	@docker build -t media-manager-proto-generator ./shared/proto 
+
 build:
 	@docker-compose build
 
@@ -29,9 +32,26 @@ bash-streaming-service:
 logs:
 	@docker-compose logs -f
 
-generate-proto:
-	@docker-compose run --rm proto-gen
-
-#protoc --go_out=paths=import:proto/generated --go-grpc_out=paths=import:proto/generated proto/definitions/*.proto
+proto-gen:
+ifeq ($(FILES),all)
+	@echo "Compiling all .proto files..."
+	@cd shared/proto/definitions && for %%f in (*.proto) do ( \
+		docker run --rm -v "$(CURDIR)/shared/proto:/proto" \
+		media-manager-proto-generator \
+		--proto_path=/proto \
+		--go_out=/proto/generated \
+		--go-grpc_out=/proto/generated \
+		definitions/%%f )
+else
+	@echo "Compiling specified proto files: $(FILES)"
+	@for %%f in ($(FILES)) do ( \
+		docker run --rm -v "$(CURDIR)/shared/proto:/proto" \
+		media-manager-proto-generator \
+		--proto_path=/proto \
+		--go_out=/proto/generated \
+		--go-grpc_out=/proto/generated \
+		definitions/%%f \
+	)
+endif
 
 

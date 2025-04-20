@@ -1,17 +1,4 @@
 services:
-  # proto-gen:
-  #   build:
-  #     context: ./proto
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./proto:/proto
-  #   working_dir: /proto
-  #   command: >
-  #     protoc
-  #     --go_out=generated
-  #     --go-grpc_out=generated
-  #     definitions/user-service.proto
-
   gateway:
     build:
       context: ./gateway
@@ -22,7 +9,7 @@ services:
       - "${GATEWAY_PROXY_PORT}:${GATEWAY_PROXY_PORT}"
     volumes:
       - ./gateway:/gateway
-      - ./proto:/proto
+      - ./shared:/shared
     working_dir: /gateway
     command: gin --appPort ${GATEWAY_PORT} --port ${GATEWAY_PROXY_PORT} --immediate --path ./cmd run gateway.go
 
@@ -36,7 +23,7 @@ services:
       - "${USER_SERVICE_PROXY_PORT}:${USER_SERVICE_PROXY_PORT}"
     volumes:
       - ./services/user-service:/user-service
-      - ./proto:/proto
+      - ./shared:/shared
     working_dir: /user-service
     command: gin --appPort ${USER_SERVICE_PORT} --port ${USER_SERVICE_PROXY_PORT} --immediate --path ./cmd run user.go
 
@@ -48,6 +35,7 @@ services:
     volumes:
       - plex_media:/data
       - ./services/streaming-service:/streaming-service
+      - ./shared:/shared
     working_dir: /streaming-service
     ports:
       - "${STREAMING_SERVICE_PORT}:${STREAMING_SERVICE_PORT}"
