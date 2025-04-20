@@ -1,23 +1,3 @@
-# Docker commands
-build:
-	@docker-compose build
-
-start:
-	@docker-compose up -d
-
-stop:
-	@docker-compose stop
-
-down:
-	@docker-compose down
-
-bash:
-	@docker exec -it go-dev-container /bin/sh
-
-logs:
-	@docker-compose logs -f
-
-
 # Database file location
 DB_FILE ?= ./database/data/mydb.db
 
