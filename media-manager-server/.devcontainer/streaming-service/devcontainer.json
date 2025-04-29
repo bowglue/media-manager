@@ -2,6 +2,7 @@
   "name": "Streaming-Service Container",
   "dockerComposeFile": "../../docker-compose.yml",
   "service": "streaming-service",
+  "shutdownAction": "none",
   "workspaceFolder": "/streaming-service",
   "customizations": {
     "vscode": {
