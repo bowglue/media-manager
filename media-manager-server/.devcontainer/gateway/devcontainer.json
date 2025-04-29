@@ -2,6 +2,7 @@
   "name": "Gateway Container",
   "dockerComposeFile": "../../docker-compose.yml",
   "service": "gateway",
+  "shutdownAction": "none",
   "workspaceFolder": "/gateway",
   "customizations": {
     "vscode": {

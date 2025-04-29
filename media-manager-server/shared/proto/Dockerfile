@@ -1,7 +1,7 @@
 FROM media-manager-server-base:latest
 
 # Create directories
-RUN mkdir -p definitions generated
+RUN mkdir -p protobuf api
 
 # RUN go mod tidy
 

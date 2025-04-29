@@ -14,6 +14,7 @@ build/
 # Go modules
 go.sum
 go.work
+go.work.sum
 
 # Dependency directories (vendor is used with `go mod vendor`)
 vendor/
@@ -27,6 +28,10 @@ vendor/
 *.tmp
 *.log
 .DS_Store
+
+# Temporary directories
+**/tmp/
+tmp/
 
 # SQLite databases (if generated during dev)
 database/data/*.db
@@ -43,3 +48,5 @@ segments/
 
 # Env File
 .env
+.env.local
+.env.docker

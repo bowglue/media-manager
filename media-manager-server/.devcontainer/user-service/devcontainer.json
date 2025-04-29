@@ -2,6 +2,7 @@
   "name": "User-Service Container",
   "dockerComposeFile": "../../docker-compose.yml",
   "service": "user-service",
+  "shutdownAction": "none",
   "workspaceFolder": "/user-service",
   "customizations": {
     "vscode": {
