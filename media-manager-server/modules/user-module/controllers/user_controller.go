@@ -1,4 +1,4 @@
-package handlers
+package controllers
 
 import (
 	httpUtil "mms/common/http-util"
@@ -6,18 +6,18 @@ import (
 	"net/http"
 )
 
-type UserHandler struct {
+type UserController struct {
 	*httpUtil.HttpHandler
 	*services.UserService
 }
 
-func NewUserHandler() *UserHandler {
-	return &UserHandler{
+func NewUserHandler() *UserController {
+	return &UserController{
 		HttpHandler: httpUtil.NewHttpHandler(),
 		UserService: services.NewUserService(),
 	}
 }
 
-func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+func (h *UserController) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /user/{id}", h.getUserById)
 }

@@ -1,7 +1,7 @@
 package registery
 
 import (
-	userHandlers "mms/modules/user-module/handlers"
+	userController "mms/modules/user-module/controllers"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ type RouteHandler interface {
 var registeredHttpHandlers []RouteHandler
 
 func RegisterAllHandlers() {
-	userHandler := userHandlers.NewUserHandler()
+	userHandler := userController.NewUserHandler()
 
 	RegisterHttpHandlers(userHandler)
 }

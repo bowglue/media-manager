@@ -1,11 +1,11 @@
-package handlers
+package controllers
 
 import (
 	"mms/common/types"
 	"net/http"
 )
 
-func (h *UserHandler) getUserById(w http.ResponseWriter, r *http.Request) {
+func (h *UserController) getUserById(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from URL parameters
 	userID := r.PathValue("id")
 	if userID == "" {
