@@ -1,61 +1,46 @@
 # Docker commands
-build-server-base:
-	@docker build -f Dockerfile.server.base -t media-manager-server-base:latest .
-
-build-service-base:
-	@docker build -f ./services/Dockerfile.service.base -t media-manager-service-base:latest .
-
-build-proto-gen:
-	@docker build -t media-manager-proto-generator ./shared/proto 
-
 build:
-	@docker-compose -f docker-compose.dev.yml build
+	@docker-compose -f docker-compose.yml build
 
 start:
-	@docker-compose -f docker-compose.dev.yml up -d
+	@docker-compose -f docker-compose.yml up -d
 
 stop:
-	@docker-compose -f docker-compose.dev.yml stop
+	@docker-compose -f docker-compose.yml stop
 
 down:
-	@docker-compose -f docker-compose.dev.yml down
+	@docker-compose -f docker-compose.yml down
 	
-bash-gateway:
-	@docker exec -it gateway /bin/sh
-
-bash-user-service:
-	@docker exec -it user-service /bin/sh
-
-bash-streaming-service:
-	@docker exec -it streaming-service /bin/sh
+bash:
+	@docker exec -it media-manager-server /bin/sh
 
 logs:
 	@docker-compose logs -f
 
-proto-gen:
-ifeq ($(FILES),all)
-	@echo "Compiling all .proto files..."
-	@cd shared/proto/protobuf && for %%f in (*.proto) do ( \
-		docker run --rm -v "$(CURDIR)/shared/proto:/proto" \
-		media-manager-proto-generator \
-		--proto_path=/proto/protobuf \
-		--go_out=/proto/api \
-		--go-grpc_out=/proto/api \
-		--go_opt=paths=source_relative \
-		--go-grpc_opt=paths=source_relative \
-		%%f )
-else
-	@echo "Compiling specified proto files: $(FILES)"
-	@for %%f in ($(FILES)) do ( \
-		docker run --rm -v "$(CURDIR)/shared/proto:/proto" \
-		media-manager-proto-generator \
-		--proto_path=/proto/protobuf \
-		--go_out=/proto/api \
-		--go-grpc_out=/proto/api \
-		--go_opt=paths=source_relative \
-		--go-grpc_opt=paths=source_relative \
-		%%f \
-	)
-endif
+# Database file location
+DB_FILE ?= ./database/data/mydb.db
 
+# SQL commands
+generate-sql:
+	@echo "Cleaning up old repository code..."
+	@rm -rf internal/repository/
+	@echo "Repository code cleanup complete."
+	@echo "Generating SQL code..."
+	sqlc generate -f database/sqlc.yaml
+	@echo "Code generation complete."
 
+# Migration commands with automatic code generation
+migrate-up:
+	migrate -path ./database/migrations -database "sqlite3://$(DB_FILE)" up
+	$(MAKE) generate-sql
+	@echo "Migrations applied and code generated."
+
+migrate-down:
+	migrate -path ./database/migrations -database "sqlite3://$(DB_FILE)" down 1
+# $(MAKE) generate-sql
+# @echo "Migration reverted and code regenerated."
+
+# Create new migration files
+migrate-create:
+	@read -p "Enter migration name: " name; 
+	@migrate create -ext sql -dir ./database/migrations -seq $$name

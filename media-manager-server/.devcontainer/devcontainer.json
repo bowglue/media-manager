@@ -1,0 +1,19 @@
+{
+  "name": "Media Manager Server Container",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "media-manager-server",
+  "shutdownAction": "none",
+  "workspaceFolder": "/",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

@@ -1,49 +1,65 @@
 services:
-  gateway:
+  media-manager-server:
     build:
-      context: ./gateway
+      # context: ./media-manager-server
       dockerfile: Dockerfile
-    container_name: gateway
+    container_name: media-manager-server
     ports:
-      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
-      - "${GATEWAY_PROXY_PORT}:${GATEWAY_PROXY_PORT}"
+      - "${MMS_PORT}:${MMS_PORT}"
+      # - "${GATEWAY_PROXY_PORT}:${GATEWAY_PROXY_PORT}"
     volumes:
-      - ./gateway:/gateway
-      - ./shared:/shared
-    working_dir: /gateway
-    command: gin --appPort ${GATEWAY_PORT} --port ${GATEWAY_PROXY_PORT} --immediate --path ./cmd run gateway.go
-
-  user-service:
-    build:
-      context: ./services/user-service
-      dockerfile: Dockerfile
-    container_name: user-service
-    ports:
-      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
-      - "${USER_SERVICE_PROXY_PORT}:${USER_SERVICE_PROXY_PORT}"
-    volumes:
-      - ./services/user-service:/user-service
-      - ./shared:/shared
-    working_dir: /user-service
-    command: gin --appPort ${USER_SERVICE_PORT} --port ${USER_SERVICE_PROXY_PORT} --immediate --path ./cmd run user.go
-
-  streaming-service:
-    build:
-      context: ./services/streaming-service
-      dockerfile: Dockerfile
-    container_name: streaming-service
-    volumes:
+      - .:/media-manager-server
       - plex_media:/data
-      - ./services/streaming-service:/streaming-service
-      - ./shared:/shared
-    working_dir: /streaming-service
-    ports:
-      - "${STREAMING_SERVICE_PORT}:${STREAMING_SERVICE_PORT}"
-      - "${STREAMING_SERVICE_PROXY_PORT}:${STREAMING_SERVICE_PROXY_PORT}"
     environment:
       - CGO_ENABLED=${CGO_ENABLED}
-      - GIN_MODE=${GIN_MODE}
-    command: gin --appPort ${STREAMING_SERVICE_PORT} --port ${STREAMING_SERVICE_PROXY_PORT} --immediate --path ./cmd/videoStream run main.go
+    working_dir: /media-manager-server
+    command: air
+
+  # gateway:
+  #   build:
+  #     context: ./gateway
+  #     dockerfile: Dockerfile
+  #   container_name: gateway
+  #   ports:
+  #     - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+  #     - "${GATEWAY_PROXY_PORT}:${GATEWAY_PROXY_PORT}"
+  #   volumes:
+  #     - ./gateway:/gateway
+  #     - ./shared:/shared
+  #   working_dir: /gateway
+  #   command: gin --appPort ${GATEWAY_PORT} --port ${GATEWAY_PROXY_PORT} --immediate --path ./cmd run gateway.go
+
+  # user-service:
+  #   build:
+  #     context: ./services/user-service
+  #     dockerfile: Dockerfile
+  #   container_name: user-service
+  #   ports:
+  #     - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+  #     - "${USER_SERVICE_PROXY_PORT}:${USER_SERVICE_PROXY_PORT}"
+  #   volumes:
+  #     - ./services/user-service:/user-service
+  #     - ./shared:/shared
+  #   working_dir: /user-service
+  #   command: gin --appPort ${USER_SERVICE_PORT} --port ${USER_SERVICE_PROXY_PORT} --immediate --path ./cmd run user.go
+
+  # streaming-service:
+  #   build:
+  #     context: ./services/streaming-service
+  #     dockerfile: Dockerfile
+  #   container_name: streaming-service
+  #   volumes:
+  #     - plex_media:/data
+  #     - ./services/streaming-service:/streaming-service
+  #     - ./shared:/shared
+  #   working_dir: /streaming-service
+  #   ports:
+  #     - "${STREAMING_SERVICE_PORT}:${STREAMING_SERVICE_PORT}"
+  #     - "${STREAMING_SERVICE_PROXY_PORT}:${STREAMING_SERVICE_PROXY_PORT}"
+  #   environment:
+  #     - CGO_ENABLED=${CGO_ENABLED}
+  #     - GIN_MODE=${GIN_MODE}
+  #   command: gin --appPort ${STREAMING_SERVICE_PORT} --port ${STREAMING_SERVICE_PROXY_PORT} --immediate --path ./cmd/videoStream run main.go
 
 volumes:
   plex_media:

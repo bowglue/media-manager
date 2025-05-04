@@ -1,1 +1,0 @@
-FROM media-manager-service-base:latest
