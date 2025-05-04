@@ -1,9 +1,9 @@
 {
-  "name": "User-Service Container",
-  "dockerComposeFile": "../../docker-compose.yml",
-  "service": "user-service",
+  "name": "Media Manager Server Container",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "media-manager-server",
   "shutdownAction": "none",
-  "workspaceFolder": "/user-service",
+  "workspaceFolder": "/",
   "customizations": {
     "vscode": {
       "extensions": [

@@ -1,14 +1,15 @@
 services:
   media-manager-server:
     build:
-      context: ./media-manager-server
+      # context: ./media-manager-server
       dockerfile: Dockerfile
     container_name: media-manager-server
     ports:
       - "${MMS_PORT}:${MMS_PORT}"
       # - "${GATEWAY_PROXY_PORT}:${GATEWAY_PROXY_PORT}"
     volumes:
-      - ./media-manager-server:/media-manager-server
+      - .:/media-manager-server
+      - plex_media:/data
     environment:
       - CGO_ENABLED=${CGO_ENABLED}
     working_dir: /media-manager-server

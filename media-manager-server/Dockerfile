@@ -1,5 +1,7 @@
 FROM golang:1.24.1
 
+# COPY go.mod go.sum ./
+# RUN go mod download
 
 RUN apt-get update && apt-get install -y \
     ffmpeg \
