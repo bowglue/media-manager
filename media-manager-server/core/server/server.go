@@ -2,82 +2,70 @@ package server
 
 import (
 	"context"
-	"mms/common/logger"
-	"mms/core/middleware"
-	"mms/core/registery"
+	"database/sql"
+	"log"
 	"net/http"
+
+	"mms/common/graphql/resolvers"
+	"mms/common/logger"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type ServerConfig struct {
 	GatewayPort string
 	Log         logger.Logger
+	DBPath      string
 }
-
-// type RouteHandler interface {
-// 	RegisterRoutes(mux *http.ServeMux)
-// }
 
 type Server struct {
-	server *http.Server
-	router *http.ServeMux
-	config ServerConfig
+	httpServer *http.Server
+	router     *http.ServeMux
+	config     ServerConfig
+	db         *sql.DB
+	resolver   *resolvers.Resolver
 }
 
-// NewServer initializes a new server instance
 func NewServer(config ServerConfig) *Server {
+	db, err := sql.Open("sqlite3", config.DBPath+"?_foreign_keys=on")
+	if err != nil {
+		log.Fatalf("failed to connect to DB: %v", err)
+	}
+
 	return &Server{
-		router: http.NewServeMux(),
-		config: config,
+		router:   http.NewServeMux(),
+		config:   config,
+		db:       db,
+		resolver: &resolvers.Resolver{},
 	}
 }
 
-// setupHandlers registers routes for the HTTP server
-func (s *Server) setupHandlers() {
-	// Register all HTTP handlers
-	registery.RegisterAllHandlers()
-
-	for _, handler := range registery.GetHttpHandlers() {
-		handler.RegisterRoutes(s.router)
-	}
-	s.config.Log.Info("HTTP routes registered")
-}
-
-// setupMiddleware sets up the middleware stack
-func (s *Server) setupMiddleware() http.Handler {
-	return middleware.CreateStack(
-		middleware.Log(s.config.Log),
-	)(s.router)
-}
-
-// Start initializes and starts the HTTP server
 func (s *Server) Start() error {
-	// Start the server
-	s.config.Log.Info("Starting HTTP Gateway server on port " + s.config.GatewayPort)
+	s.config.Log.Info("Running database migrations...")
+	if err := s.runMigration(); err != nil {
+		return err
+	}
+	s.config.Log.Info("Database migration completed successfully")
 
-	// Set up route
+	s.RegisterModules()
 	s.setupHandlers()
 
-	// Create HTTP server with middleware stack
-	s.server = &http.Server{
+	s.config.Log.Info("Starting HTTP Gateway server on port " + s.config.GatewayPort)
+
+	s.httpServer = &http.Server{
 		Addr:    s.config.GatewayPort,
 		Handler: s.setupMiddleware(),
 	}
 
-	return s.server.ListenAndServe() // <--- Start and return any error
-
-	// if err := server.ListenAndServe(); err != nil {
-	// 	s.config.Log.Error("Failed to start HTTP server", err)
-	// }
+	return s.httpServer.ListenAndServe()
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.config.Log.Info("Shutting down server gracefully...")
-
-	if err := s.server.Shutdown(ctx); err != nil {
+	if err := s.httpServer.Shutdown(ctx); err != nil {
 		s.config.Log.Error("Server forced to shutdown:", err)
 		return err
 	}
-
 	s.config.Log.Info("Server exited properly")
 	return nil
 }

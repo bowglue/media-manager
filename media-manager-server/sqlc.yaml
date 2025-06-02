@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    schema: "./common/database/migrations"
+    queries: "./common/database/queries"
+    gen:
+      go:
+        package: "repository"
+        out: "./common/database/repository"
+        emit_json_tags: true
+        emit_prepared_queries: true
+        emit_empty_slices: true
