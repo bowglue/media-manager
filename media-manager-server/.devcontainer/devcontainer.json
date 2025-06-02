@@ -3,7 +3,7 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "media-manager-server",
   "shutdownAction": "none",
-  "workspaceFolder": "/",
+  "workspaceFolder": "/app",
   "customizations": {
     "vscode": {
       "extensions": [

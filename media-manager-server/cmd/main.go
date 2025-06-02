@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"mms/common/logger"
-	"mms/core/server"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"mms/common/logger"
+	"mms/core/server"
 )
 
 func main() {
@@ -17,6 +18,7 @@ func main() {
 	config := server.ServerConfig{
 		GatewayPort: ":8080", // Port for the HTTP server
 		Log:         log,
+		DBPath:      "./data/mm.db",
 	}
 
 	// Initialize the server with the configuration

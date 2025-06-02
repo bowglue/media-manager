@@ -1,0 +1,16 @@
+type Movie {
+  id: ID!
+  title: String!
+}
+
+type TvShow {
+  id: ID!
+  title: String!
+}
+
+extend type Query {
+  getMovie(id: ID!): Movie
+  getMovies: [Movie!]!
+  getTvShow(id: ID!): TvShow
+  getTvShows: [TvShow!]!
+}

@@ -1,19 +1,21 @@
 services:
   media-manager-server:
     build:
-      # context: ./media-manager-server
       dockerfile: Dockerfile
     container_name: media-manager-server
     ports:
       - "${MMS_PORT}:${MMS_PORT}"
-      # - "${GATEWAY_PROXY_PORT}:${GATEWAY_PROXY_PORT}"
     volumes:
-      - .:/media-manager-server
       - plex_media:/data
+      - .:/app
+      - ../schema:/schema
     environment:
       - CGO_ENABLED=${CGO_ENABLED}
-    working_dir: /media-manager-server
+    working_dir: /app
     command: air
+
+volumes:
+  plex_media:
 
   # gateway:
   #   build:
@@ -60,6 +62,3 @@ services:
   #     - CGO_ENABLED=${CGO_ENABLED}
   #     - GIN_MODE=${GIN_MODE}
   #   command: gin --appPort ${STREAMING_SERVICE_PORT} --port ${STREAMING_SERVICE_PROXY_PORT} --immediate --path ./cmd/videoStream run main.go
-
-volumes:
-  plex_media:
