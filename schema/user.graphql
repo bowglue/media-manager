@@ -1,6 +1,23 @@
 type User {
   id: ID!
   username: String!
+  ageRestriction: Int!
+  role: String!
+}
+
+input CreateUserInput {
+  username: String!
+  ageRestriction: Int!
+  pinHash: String
+  role: String!
+}
+
+input UpdateUserInput {
+  id: ID!
+  username: String!
+  ageRestriction: Int!
+  pinHash: String
+  role: String!
 }
 
 extend type Query {
@@ -8,10 +25,7 @@ extend type Query {
   getUser(id: ID!): User
 }
 
-input CreateUserInput {
-  username: String!
-}
-
 extend type Mutation {
-  createUser(input: CreateUserInput!): User!
+  createUser(user: CreateUserInput!): User!
+  updateUser(user: UpdateUserInput!): User!
 }
