@@ -16,8 +16,11 @@ type Movie struct {
 }
 
 type User struct {
-	ID        string       `json:"id"`
-	Username  string       `json:"username"`
-	CreatedAt sql.NullTime `json:"created_at"`
-	UpdatedAt sql.NullTime `json:"updated_at"`
+	ID             string         `json:"id"`
+	Username       string         `json:"username"`
+	AgeRestriction int64          `json:"age_restriction"`
+	PinHash        sql.NullString `json:"pin_hash"`
+	Role           string         `json:"role"`
+	CreatedAt      sql.NullTime   `json:"created_at"`
+	UpdatedAt      sql.NullTime   `json:"updated_at"`
 }

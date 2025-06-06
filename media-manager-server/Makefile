@@ -17,8 +17,8 @@ bash:
 logs:
 	@docker-compose logs -f
 
-graph:
-	@gqlgen generate
+gql-user:
+	@gqlgen generate --config modules/user-module/gqlgen.yaml
 
 # Database file location
 DB_FILE ?= ./data/mm.db

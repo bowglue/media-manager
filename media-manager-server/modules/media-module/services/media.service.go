@@ -2,7 +2,6 @@ package services
 
 import (
 	"mms/common/database/repository"
-	models "mms/common/graphql/generated"
 )
 
 type MediaService struct {
@@ -15,9 +14,9 @@ func NewMediaService(queries *repository.Queries) *MediaService {
 	}
 }
 
-func (s *MediaService) GetMovie(id string) (*models.Movie, error) {
-	return &models.Movie{
-		ID:    id,
-		Title: "media_" + id,
-	}, nil
-}
+// func (s *MediaService) GetMovie(id string) (*gql.Movie, error) {
+// 	return &gql.Movie{
+// 		ID:    id,
+// 		Title: "media_" + id,
+// 	}, nil
+// }

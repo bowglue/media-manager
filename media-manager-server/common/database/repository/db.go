@@ -27,11 +27,20 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
+	if q.doesUsernameExistStmt, err = db.PrepareContext(ctx, doesUsernameExist); err != nil {
+		return nil, fmt.Errorf("error preparing query DoesUsernameExist: %w", err)
+	}
 	if q.getMovieStmt, err = db.PrepareContext(ctx, getMovie); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMovie: %w", err)
 	}
 	if q.getUserStmt, err = db.PrepareContext(ctx, getUser); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUser: %w", err)
+	}
+	if q.getUsersStmt, err = db.PrepareContext(ctx, getUsers); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUsers: %w", err)
+	}
+	if q.updateUserStmt, err = db.PrepareContext(ctx, updateUser); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateUser: %w", err)
 	}
 	return &q, nil
 }
@@ -43,6 +52,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
 		}
 	}
+	if q.doesUsernameExistStmt != nil {
+		if cerr := q.doesUsernameExistStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing doesUsernameExistStmt: %w", cerr)
+		}
+	}
 	if q.getMovieStmt != nil {
 		if cerr := q.getMovieStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getMovieStmt: %w", cerr)
@@ -51,6 +65,16 @@ func (q *Queries) Close() error {
 	if q.getUserStmt != nil {
 		if cerr := q.getUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserStmt: %w", cerr)
+		}
+	}
+	if q.getUsersStmt != nil {
+		if cerr := q.getUsersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUsersStmt: %w", cerr)
+		}
+	}
+	if q.updateUserStmt != nil {
+		if cerr := q.updateUserStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateUserStmt: %w", cerr)
 		}
 	}
 	return err
@@ -90,19 +114,25 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db             DBTX
-	tx             *sql.Tx
-	createUserStmt *sql.Stmt
-	getMovieStmt   *sql.Stmt
-	getUserStmt    *sql.Stmt
+	db                    DBTX
+	tx                    *sql.Tx
+	createUserStmt        *sql.Stmt
+	doesUsernameExistStmt *sql.Stmt
+	getMovieStmt          *sql.Stmt
+	getUserStmt           *sql.Stmt
+	getUsersStmt          *sql.Stmt
+	updateUserStmt        *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:             tx,
-		tx:             tx,
-		createUserStmt: q.createUserStmt,
-		getMovieStmt:   q.getMovieStmt,
-		getUserStmt:    q.getUserStmt,
+		db:                    tx,
+		tx:                    tx,
+		createUserStmt:        q.createUserStmt,
+		doesUsernameExistStmt: q.doesUsernameExistStmt,
+		getMovieStmt:          q.getMovieStmt,
+		getUserStmt:           q.getUserStmt,
+		getUsersStmt:          q.getUsersStmt,
+		updateUserStmt:        q.updateUserStmt,
 	}
 }

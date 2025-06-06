@@ -1,0 +1,16 @@
+schema:
+  - ../schema/user.graphql
+
+exec:
+  filename: modules/user-module/gql/gql.go
+  package: gql
+
+model:
+  filename: modules/user-module/gql/models.go
+  package: gql
+
+resolver:
+  layout: follow-schema
+  dir: modules/user-module/gql/resolvers
+  package: resolvers # Or your main Go module name
+  filename_template: "{name}.resolver.go"

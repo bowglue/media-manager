@@ -7,25 +7,58 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 )
 
-const createUser = `-- name: CreateUser :exec
-INSERT INTO users (id, username)
-VALUES (?, ?)
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (id, username, age_restriction, pin_hash, role)
+VALUES (?, ?, ?, ?, ?) RETURNING id, username, age_restriction, pin_hash, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
+	ID             string         `json:"id"`
+	Username       string         `json:"username"`
+	AgeRestriction int64          `json:"age_restriction"`
+	PinHash        sql.NullString `json:"pin_hash"`
+	Role           string         `json:"role"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
-	_, err := q.exec(ctx, q.createUserStmt, createUser, arg.ID, arg.Username)
-	return err
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.queryRow(ctx, q.createUserStmt, createUser,
+		arg.ID,
+		arg.Username,
+		arg.AgeRestriction,
+		arg.PinHash,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.AgeRestriction,
+		&i.PinHash,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const doesUsernameExist = `-- name: DoesUsernameExist :one
+SELECT EXISTS (
+    SELECT 1 FROM users WHERE username = ?
+)
+`
+
+func (q *Queries) DoesUsernameExist(ctx context.Context, username string) (int64, error) {
+	row := q.queryRow(ctx, q.doesUsernameExistStmt, doesUsernameExist, username)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, created_at, updated_at FROM users WHERE id = ?
+SELECT id, username, age_restriction, pin_hash, role, created_at, updated_at FROM users WHERE id = ?
 `
 
 func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
@@ -34,6 +67,78 @@ func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
+		&i.AgeRestriction,
+		&i.PinHash,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUsers = `-- name: GetUsers :many
+SELECT id, username, age_restriction, pin_hash, role, created_at, updated_at FROM users
+`
+
+func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.query(ctx, q.getUsersStmt, getUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.AgeRestriction,
+			&i.PinHash,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users SET username = ?, age_restriction = ?, pin_hash = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ? RETURNING id, username, age_restriction, pin_hash, role, created_at, updated_at
+`
+
+type UpdateUserParams struct {
+	Username       string         `json:"username"`
+	AgeRestriction int64          `json:"age_restriction"`
+	PinHash        sql.NullString `json:"pin_hash"`
+	Role           string         `json:"role"`
+	ID             string         `json:"id"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.queryRow(ctx, q.updateUserStmt, updateUser,
+		arg.Username,
+		arg.AgeRestriction,
+		arg.PinHash,
+		arg.Role,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.AgeRestriction,
+		&i.PinHash,
+		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

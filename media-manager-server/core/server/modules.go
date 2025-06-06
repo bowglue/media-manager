@@ -2,18 +2,15 @@ package server
 
 import (
 	"mms/common/database/repository"
-	"mms/common/graphql/resolvers"
-	mediamodule "mms/modules/media-module"
 	usermodule "mms/modules/user-module"
 )
 
-func (s *Server) RegisterModules() {
+func (s *Server) registerModules() {
 	queries := repository.New(s.db)
-	userModule := usermodule.New(queries)
-	mediaModule := mediamodule.New(queries)
 
-	s.resolver = &resolvers.Resolver{
-		UserService:  userModule.Service,
-		MediaService: mediaModule.Service,
-	}
+	// Register User Module
+	s.config.Log.Info("Register User Module")
+	userModule := usermodule.NewUserModule(queries)
+	s.router.Handle("/user", userModule.Handler())
+
 }

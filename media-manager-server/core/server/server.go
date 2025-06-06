@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"mms/common/graphql/resolvers"
 	"mms/common/logger"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -23,7 +22,6 @@ type Server struct {
 	router     *http.ServeMux
 	config     ServerConfig
 	db         *sql.DB
-	resolver   *resolvers.Resolver
 }
 
 func NewServer(config ServerConfig) *Server {
@@ -33,10 +31,9 @@ func NewServer(config ServerConfig) *Server {
 	}
 
 	return &Server{
-		router:   http.NewServeMux(),
-		config:   config,
-		db:       db,
-		resolver: &resolvers.Resolver{},
+		router: http.NewServeMux(),
+		config: config,
+		db:     db,
 	}
 }
 
@@ -47,8 +44,7 @@ func (s *Server) Start() error {
 	}
 	s.config.Log.Info("Database migration completed successfully")
 
-	s.RegisterModules()
-	s.setupHandlers()
+	s.registerModules()
 
 	s.config.Log.Info("Starting HTTP Gateway server on port " + s.config.GatewayPort)
 
